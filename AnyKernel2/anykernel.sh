@@ -7,11 +7,11 @@ kernel.string=Caesium by MSF Jarvis
 do.devicecheck=1
 do.modules=0
 do.cleanup=1
-do.cleanuponabort=0
-device.name1=YUNIQUE
-device.name2=
-device.name3=
-device.name4=
+do.cleanuponabort=1
+device.name1=OnePlus3
+device.name2=OnePlus3T
+device.name3=oneplus3
+device.name4=oneplus3t
 device.name5=
 } # end properties
 

@@ -1,8 +1,6 @@
 #!/bin/bash
 
 rm .version 2>/dev/null
-rm arch/arm/boot/dt.img
-rm arch/arm/boot/Image.gz-dtb
 
 # Bash colors
 green='\033[01;32m'
@@ -33,15 +31,16 @@ export KBUILD_BUILD_USER=MSF
 export KBUILD_BUILD_HOST=jarvisbox
 
 # Paths
-KERNEL_DIR=$(pwd)
-ANYKERNEL_DIR="${KERNEL_DIR}/AnyKernel2"
-TOOLCHAIN_DIR="/home/msfjarvis/git-repos/toolchains/aarch64-linux-gnu/"
+WORKING_DIR=$(pwd)
+ANYKERNEL_DIR="${WORKING_DIR}/AnyKernel2"
+TOOLCHAIN_DIR="${WORKING_DIR}/../../toolchains/aarch64-linux-gnu/"
 REPACK_DIR="${ANYKERNEL_DIR}"
-ZIP_MOVE="${KERNEL_DIR}/out/"
-KERNEL_DIR="${KERNEL_DIR}/arch/arm64/boot"
+ZIP_MOVE="${WORKING_DIR}/out/"
+KERNEL_DIR="${WORKING_DIR}/arch/arm64/boot"
 
 # Functions
 function make_kernel() {
+  rm arch/arm64/boot/Image.gz-dtb
   [ "${CLEAN}" ] && make clean
   make "${DEFCONFIG}" "${THREAD}"
   if [ "${MODULE}" ]; then
@@ -49,15 +48,22 @@ function make_kernel() {
   else
       make "${KERNEL}" "${THREAD}"
   fi
-  [ -f "${KERNEL_DIR}/${KERNEL}" ] && cp -vr "${KERNEL_DIR}/${KERNEL}" "${REPACK_DIR}/Image.gz-dtb" || exit 1
+  [ -f "${KERNEL_DIR}/${KERNEL}" ] && cp -vr "${KERNEL_DIR}/${KERNEL}" "${REPACK_DIR}/Image.gz" || return 1
 }
+
+function make_dtb() {
+  make dtbs "${THREAD}"
+  "${WORKING_DIR}/dtbToolCM" -2 -o "${WORKING_DIR}/arch/arm64/boot/dt.img" -s 2048 -p "${WORKING_DIR}/scripts/dtc/" "${WORKING_DIR}/arch/arm64/boot/dts/"
+  [ -f "${WORKING_DIR}/arch/arm64/boot/dt.img" ] && cp -vr "${WORKING_DIR}/arch/arm64/boot/dt.img" "${REPACK_DIR}/dtb" || return 1
+}
+
 
 function make_zip() {
   cd "${REPACK_DIR}"
   zip -ur kernel_temp.zip *
   mkdir -p "${ZIP_MOVE}"
   cp  kernel_temp.zip "${ZIP_MOVE}/${FINAL_VER}.zip"
-  cd "${KERNEL_DIR}"
+  cd "${WORKING_DIR}"
 }
 
 function tg() {
@@ -70,18 +76,12 @@ function upload_to_tg() {
     tg "${ZIP_MOVE}/${FINAL_VER}.zip"
 }
 
-function bb_upload() {
-  cd "${ZIP_MOVE}"
-  wput ftp://${BB_CREDENTIALS}@basketbuild.com/jalebi/Caesium-Test-Builds/ ${FINAL_VER}.zip
-  cd ${KERNEL_DIR}
-}
-
 function push_and_flash() {
-  adb push "${ZIP_MOVE}"/${FINAL_VER}.zip /external_sd/Caesium/
-  adb shell twrp install "/external_sd/Caesium/${FINAL_VER}.zip"
+  adb push "${ZIP_MOVE}"/${FINAL_VER}.zip /sdcard/Caesium/
+  adb shell twrp install "/sdcard//Caesium/${FINAL_VER}.zip"
 }
 
-while getopts ":ctabfm:" opt; do
+while getopts ":ctbfm:" opt; do
   case $opt in
     c)
       echo -e "${cyan} Building clean ${restore}" >&2
@@ -90,10 +90,6 @@ while getopts ":ctabfm:" opt; do
     t)
       echo -e "${cyan} Will upload build to Telegram! ${restore}" >&2
       TG_UPLOAD=true
-      ;;
-    a)
-      echo -e "${cyan} Will upload build to BasketBuild ${restore}" >&2
-      BB_UPLOAD=true
       ;;
     b)
       echo -e "${cyan} Building ZIP only ${restore}" >&2
@@ -108,7 +104,7 @@ while getopts ":ctabfm:" opt; do
       [[ "${MODULE}" == */ ]] || MODULE="${MODULE}/"
       if [[ ! "$(ls ${MODULE}Kconfig*  2>/dev/null)" ]]; then
           echo -e "${red} Invalid module specified - ${MODULE} ${restore}"
-          exit 1
+          return 1
       fi
       echo -e "${cyan} Building module ${MODULE} ${restore}"
       ;;
@@ -123,13 +119,15 @@ DATE_START=$(date +"%s")
 # TC tasks
 export CROSS_COMPILE=$TOOLCHAIN_DIR/bin/aarch64-linux-gnu-
 export LD_LIBRARY_PATH=$TOOLCHAIN_DIR/lib/
-cd "${KERNEL_DIR}"
+cd "${WORKING_DIR}"
 
 # Make
 if [ "${ONLY_ZIP}" ]; then
+#  make_dtb
   make_zip
 else
   make_kernel
+#  make_dtb
   make_zip
 fi
 
