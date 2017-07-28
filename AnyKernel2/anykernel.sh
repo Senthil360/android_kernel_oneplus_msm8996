@@ -41,6 +41,7 @@ ui_print "Running Android $android_ver, $compatibility_string";
 dump_boot;
 
 # begin ramdisk changes
+insert_line init.qcom.rc "init.caesium.rc" after "import init.target.rc" "import /init.caesium.rc"
 
 # end ramdisk changes
 

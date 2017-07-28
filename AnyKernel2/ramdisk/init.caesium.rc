@@ -1,0 +1,36 @@
+on property:sys.boot_completed=1
+
+  # VM overrides, prevents memory thrashing
+  write  /proc/sys/vm/vfs_cache_pressure '20'
+  write  /proc/sys/vm/overcommit_ratio '48'
+  write  /proc/sys/vm/swappiness '4'
+  write  /proc/sys/vm/extra_free_kbytes '20480'
+  write  /proc/sys/vm/dirty_expire_centisecs '220'
+
+  # Slightly tuning up the storage
+  write  /sys/block/sda/queue/read_ahead_kb '4096'
+  write  /sys/block/sda/queue/add_random '1'
+  write  /sys/block/sda/queue/rq_affinity '1'
+  write  /sys/block/sda/queue/iostats '0'
+  write  /sys/block/sda/queue/rotational '0'
+  write  /sys/block/sda/queue/scheduler 'maple'
+
+  # Don't want no wakelocks
+  write  /sys/module/wakeup/parameters/enable_netlink_ws 'N'
+  write  /sys/module/wakeup/parameters/enable_timerfd_ws 'N'
+  write  /sys/module/wakeup/parameters/enable_wlan_ws 'N'
+  write  /sys/module/wakeup/parameters/enable_wlan_extscan_wl_ws 'N'
+  write  /sys/module/wakeup/parameters/enable_qcom_rx_wakelock_ws 'N'
+  write  /sys/module/wakeup/parameters/enable_ipa_ws 'N'
+
+  # GPU should be taking it easy
+  write  /sys/class/kgsl/kgsl-3d0/devfreq/governor 'powersave'
+
+  # msm_thermal settings
+  write  /sys/module/msm_thermal/parameters/temp_threshold '50'
+  write  /sys/module/msm_thermal/parameters/core_limit_temp_degC '55'
+  write  /sys/module/msm_thermal/parameters/enabled 'Y'
+
+  # Vibrator levels :lenny-face:
+  write  /sys/class/timed_output/vibrator/vtg_level '1682'
+
