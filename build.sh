@@ -127,6 +127,7 @@ if [ "${ONLY_ZIP}" ]; then
   make_zip
 else
   make_kernel
+  [[ $? == 0 ]] || exit 256
 #  make_dtb
   make_zip
 fi
