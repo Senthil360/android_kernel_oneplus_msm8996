@@ -45,18 +45,11 @@ function make_kernel() {
   if [ "${MODULE}" ]; then
       make "${MODULE}" "${THREAD}"
   else
-      rm arch/arm64/boot/Image.gz-dtb
+      rm arch/arm64/boot/Image.gz-dtb 2>/dev/null
       make "${KERNEL}" "${THREAD}"
   fi
-  [ -f "${KERNEL_DIR}/${KERNEL}" ] && cp -vr "${KERNEL_DIR}/${KERNEL}" "${REPACK_DIR}/Image.gz" || return 1
+  [ -f "${KERNEL_DIR}/${KERNEL}" ] && cp -vr "${KERNEL_DIR}/${KERNEL}" "${REPACK_DIR}" || return 1
 }
-
-function make_dtb() {
-  make dtbs "${THREAD}"
-  "${WORKING_DIR}/dtbToolCM" -2 -o "${WORKING_DIR}/arch/arm64/boot/dt.img" -s 2048 -p "${WORKING_DIR}/scripts/dtc/" "${WORKING_DIR}/arch/arm64/boot/dts/"
-  [ -f "${WORKING_DIR}/arch/arm64/boot/dt.img" ] && cp -vr "${WORKING_DIR}/arch/arm64/boot/dt.img" "${REPACK_DIR}/dtb" || return 1
-}
-
 
 function make_zip() {
   cd "${REPACK_DIR}"
@@ -123,12 +116,10 @@ cd "${WORKING_DIR}"
 
 # Make
 if [ "${ONLY_ZIP}" ]; then
-#  make_dtb
   make_zip
 else
   make_kernel
   [[ $? == 0 ]] || exit 256
-#  make_dtb
   make_zip
 fi
 
