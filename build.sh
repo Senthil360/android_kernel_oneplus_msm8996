@@ -40,12 +40,12 @@ KERNEL_DIR="${WORKING_DIR}/arch/arm64/boot"
 
 # Functions
 function make_kernel() {
-  rm arch/arm64/boot/Image.gz-dtb
   [ "${CLEAN}" ] && make clean
   make "${DEFCONFIG}" "${THREAD}"
   if [ "${MODULE}" ]; then
       make "${MODULE}" "${THREAD}"
   else
+      rm arch/arm64/boot/Image.gz-dtb
       make "${KERNEL}" "${THREAD}"
   fi
   [ -f "${KERNEL_DIR}/${KERNEL}" ] && cp -vr "${KERNEL_DIR}/${KERNEL}" "${REPACK_DIR}/Image.gz" || return 1
